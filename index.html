@@ -10,9 +10,9 @@
 <link rel="icon" href="data:,">
 
 <!-- ═══════════════════════════════════════════════════════════
-     FUNIL CONFIG — tracker.axislabs.tech / D1 / Worker
-     fb_pixel_id NÃO setado ainda. Quando adicionar pixel:
-       fb_pixel_id: ['XXX', 'YYY']   ← Worker liga CAPI automaticamente
+     FUNIL CONFIG + META PARAMETER BUILDER + EVENT ID DEDUP
+     Roda IMEDIATAMENTE — antes do tracker e do pixel.
+     Cria _fbc/_fbp cookies + event_id pra dedup pixel↔CAPI.
 ═══════════════════════════════════════════════════════════ -->
 <script>
 window.FUNIL_CONFIG = {
@@ -21,9 +21,40 @@ window.FUNIL_CONFIG = {
   funil_id:      'magnetic-attraction-v1',
   funil_nome:    'Magnetic Attraction — Texting Trick (EN)',
   pagina:        'vsl',
-  eventoEntrada: 'quiz_page_view'
-  // fb_pixel_id: ['ID1', 'ID2']  ← adicionar quando ativar pixel
+  eventoEntrada: 'quiz_page_view',
+  fb_pixel_id:   ['2734819843542524']
 };
+
+// Event ID dedup compartilhado pixel ↔ Worker CAPI
+window._fbEventIds = {};
+window._getFbEventId = function(name) {
+  if (!window._fbEventIds[name]) {
+    window._fbEventIds[name] = 'ev_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+  return window._fbEventIds[name];
+};
+window._getFbEventId('PageView');
+
+// Parameter Builder: cria _fbc (de ?fbclid=) e _fbp ANTES do pixel
+(function() {
+  function getC(name) {
+    var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]+)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  function setC(name, value) {
+    var d = new Date();
+    d.setTime(d.getTime() + 90*24*60*60*1000);
+    var dom = location.hostname.replace(/^www\./, '');
+    document.cookie = name + '=' + value + ';expires=' + d.toUTCString() + ';path=/;domain=.' + dom + ';SameSite=Lax';
+  }
+  try {
+    var fbclid = new URLSearchParams(location.search).get('fbclid');
+    if (fbclid && !getC('_fbc')) setC('_fbc', 'fb.1.' + Date.now() + '.' + fbclid);
+  } catch(e) {}
+  if (!getC('_fbp')) {
+    setC('_fbp', 'fb.1.' + Date.now() + '.' + Math.floor(Math.random() * 2147483648));
+  }
+})();
 </script>
 
 <!-- ═══════════════════════════════════════════════════════════
@@ -39,6 +70,7 @@ window.FUNIL_CONFIG = {
 <link rel="preload" href="https://scripts.converteai.net/lib/js/smartplayer-wc/v4/smartplayer.js" as="script">
 <link rel="dns-prefetch" href="https://license.vturb.com">
 <link rel="preconnect" href="https://tracker.axislabs.tech" crossorigin>
+<link rel="preconnect" href="https://connect.facebook.net" crossorigin>
 
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -255,6 +287,33 @@ setTimeout(function(){
   document.head.appendChild(s);
 }, 4000);
 </script>
+
+<!-- Meta Pixel — multi-pixel ready + event_id dedup com Worker CAPI -->
+<script>
+setTimeout(function(){
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+
+// Inicializa TODOS os pixels do FUNIL_CONFIG (aceita string ou array)
+var pixels = (window.FUNIL_CONFIG && window.FUNIL_CONFIG.fb_pixel_id) || [];
+if (!Array.isArray(pixels)) pixels = [pixels];
+pixels.forEach(function(pid){ if (pid) fbq('init', pid); });
+
+// PageView com eventID compartilhado — Worker CAPI usa o mesmo ID
+fbq('track', 'PageView', {}, { eventID: window._getFbEventId('PageView') });
+}, 4000);
+</script>
+<noscript>
+<img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=2734819843542524&ev=PageView&noscript=1"/>
+</noscript>
+<!-- End Meta Pixel Code -->
 
 </body>
 </html>
