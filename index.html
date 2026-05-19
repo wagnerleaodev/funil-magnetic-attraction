@@ -284,28 +284,58 @@ html,body{
   <p><a href="#">Terms of Service</a> &nbsp;|&nbsp; <a href="#">Privacy Policy</a></p>
 </footer>
 
-<!-- Data dinâmica + locale-aware (Intl.DateTimeFormat).
+<!-- Data dinâmica baseada em LOCALIZAÇÃO FÍSICA do usuário (não idioma).
+     Usa Cloudflare /cdn-cgi/trace pra detectar país pelo IP — mesmo domínio,
+     zero CORS, ~10-50ms.
      Adiada via requestIdleCallback → roda só quando browser tá idle,
      ZERO impacto em FCP/LCP/TBT.
-     US browser  → "05/19/2026" | BR browser → "19/05/2026"
-     DE browser  → "19.05.2026" | FR browser → "19/05/2026"
-     Fallback US format já tá renderizado no HTML como safety net. -->
+
+     Usuário em US (mesmo com celular em PT)  → "05/19/2026"
+     Usuário em BR (mesmo com celular em EN)  → "19/05/2026"
+     Usuário em DE                             → "19.05.2026"
+     Fallback US format já tá no HTML como safety net. -->
 <script>
 (function(){
-  function updateDate() {
+  // País ISO → locale (regiões com mesma língua + formato de data)
+  var COUNTRY_LOCALE = {
+    'US':'en-US','GB':'en-GB','CA':'en-CA','AU':'en-AU','NZ':'en-NZ','IE':'en-IE',
+    'BR':'pt-BR','PT':'pt-PT',
+    'ES':'es-ES','MX':'es-MX','AR':'es-AR','CO':'es-CO','CL':'es-CL','PE':'es-PE',
+    'DE':'de-DE','AT':'de-AT','CH':'de-CH',
+    'FR':'fr-FR','BE':'fr-BE',
+    'IT':'it-IT','NL':'nl-NL','SE':'sv-SE','NO':'nb-NO','DK':'da-DK','FI':'fi-FI',
+    'JP':'ja-JP','KR':'ko-KR','CN':'zh-CN','TW':'zh-TW',
+    'RU':'ru-RU','PL':'pl-PL','TR':'tr-TR'
+  };
+
+  function applyLocale(locale) {
     var el = document.getElementById('warnDate');
     if (!el) return;
     try {
-      var locale = navigator.language || (navigator.languages && navigator.languages[0]) || 'en-US';
       el.textContent = new Intl.DateTimeFormat(locale, {
         year:'numeric', month:'2-digit', day:'2-digit'
       }).format(new Date());
     } catch(e) {
-      // Fallback US format se Intl falhar (raríssimo)
       var d = new Date();
-      el.textContent = ('0' + (d.getMonth()+1)).slice(-2) + '/' + ('0' + d.getDate()).slice(-2) + '/' + d.getFullYear();
+      el.textContent = ('0'+(d.getMonth()+1)).slice(-2)+'/'+('0'+d.getDate()).slice(-2)+'/'+d.getFullYear();
     }
   }
+
+  function updateDate() {
+    // 1) Detecta país pelo IP via Cloudflare edge (preciso, ignora idioma do device)
+    fetch('/cdn-cgi/trace', { cache:'no-store' })
+      .then(function(r){ return r.ok ? r.text() : Promise.reject(); })
+      .then(function(text){
+        var m = text.match(/loc=([A-Z]{2})/);
+        var country = m ? m[1] : null;
+        applyLocale(COUNTRY_LOCALE[country] || 'en-US');
+      })
+      .catch(function(){
+        // Fallback: idioma do browser (se /cdn-cgi/trace falhar, raro)
+        applyLocale(navigator.language || 'en-US');
+      });
+  }
+
   if (window.requestIdleCallback) {
     requestIdleCallback(updateDate, { timeout: 1500 });
   } else {
