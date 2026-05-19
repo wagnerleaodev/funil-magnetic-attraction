@@ -64,7 +64,7 @@ window._getFbEventId('PageView');
 <link rel="preconnect" href="https://images.converteai.net" crossorigin>
 <link rel="preconnect" href="https://cdn.converteai.net" crossorigin>
 <link rel="preconnect" href="https://scripts.converteai.net" crossorigin>
-<link rel="preload" as="image" fetchpriority="high" href="https://images.converteai.net/a2d83dff-330c-4ace-96ad-19f8f4d8c466/players/6a0bbe59044ded98927d4ca6/cover.jpg" crossorigin>
+<link rel="preload" as="image" fetchpriority="high" href="cover.webp" type="image/webp">
 <link rel="preload" href="https://cdn.converteai.net/a2d83dff-330c-4ace-96ad-19f8f4d8c466/6a0bbe4ef609f28007229e39/main.m3u8" as="fetch" crossorigin>
 <link rel="preload" href="https://scripts.converteai.net/a2d83dff-330c-4ace-96ad-19f8f4d8c466/players/6a0bbe59044ded98927d4ca6/v4/player.js" as="script">
 <link rel="preload" href="https://scripts.converteai.net/lib/js/smartplayer-wc/v4/smartplayer.js" as="script">
@@ -246,14 +246,13 @@ html,body{
 
   <div class="vsl-wrapper">
     <div class="vsl-slot">
-      <!-- LCP IMAGE: renderiza imediatamente, fetchpriority="high" -->
+      <!-- LCP IMAGE: WebP local (same domain HTTP/2 reuse, 17 KB vs 35 KB) -->
       <img class="vsl-cover"
-           src="https://images.converteai.net/a2d83dff-330c-4ace-96ad-19f8f4d8c466/players/6a0bbe59044ded98927d4ca6/cover.jpg"
+           src="cover.webp"
            alt="Video preview"
-           width="520" height="293"
+           width="760" height="428"
            fetchpriority="high"
-           decoding="async"
-           crossorigin>
+           decoding="async">
       <vturb-smartplayer id="vid-6a0bbe59044ded98927d4ca6"></vturb-smartplayer>
       <script type="text/javascript">var s=document.createElement("script");s.src="https://scripts.converteai.net/a2d83dff-330c-4ace-96ad-19f8f4d8c466/players/6a0bbe59044ded98927d4ca6/v4/player.js",s.async=!0,document.head.appendChild(s);</script>
     </div>
