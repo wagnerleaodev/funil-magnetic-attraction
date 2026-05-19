@@ -284,15 +284,33 @@ html,body{
   <p><a href="#">Terms of Service</a> &nbsp;|&nbsp; <a href="#">Privacy Policy</a></p>
 </footer>
 
-<!-- Data dinâmica — replaceu Intl.DateTimeFormat (causava 105ms TBT) -->
+<!-- Data dinâmica + locale-aware (Intl.DateTimeFormat).
+     Adiada via requestIdleCallback → roda só quando browser tá idle,
+     ZERO impacto em FCP/LCP/TBT.
+     US browser  → "05/19/2026" | BR browser → "19/05/2026"
+     DE browser  → "19.05.2026" | FR browser → "19/05/2026"
+     Fallback US format já tá renderizado no HTML como safety net. -->
 <script>
 (function(){
-  var el = document.getElementById('warnDate');
-  if(!el) return;
-  var d = new Date();
-  var mm = ('0' + (d.getMonth()+1)).slice(-2);
-  var dd = ('0' + d.getDate()).slice(-2);
-  el.textContent = mm + '/' + dd + '/' + d.getFullYear();
+  function updateDate() {
+    var el = document.getElementById('warnDate');
+    if (!el) return;
+    try {
+      var locale = navigator.language || (navigator.languages && navigator.languages[0]) || 'en-US';
+      el.textContent = new Intl.DateTimeFormat(locale, {
+        year:'numeric', month:'2-digit', day:'2-digit'
+      }).format(new Date());
+    } catch(e) {
+      // Fallback US format se Intl falhar (raríssimo)
+      var d = new Date();
+      el.textContent = ('0' + (d.getMonth()+1)).slice(-2) + '/' + ('0' + d.getDate()).slice(-2) + '/' + d.getFullYear();
+    }
+  }
+  if (window.requestIdleCallback) {
+    requestIdleCallback(updateDate, { timeout: 1500 });
+  } else {
+    setTimeout(updateDate, 50);
+  }
 })();
 </script>
 
