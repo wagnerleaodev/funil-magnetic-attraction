@@ -64,7 +64,8 @@ window._getFbEventId('PageView');
 <link rel="preconnect" href="https://images.converteai.net" crossorigin>
 <link rel="preconnect" href="https://cdn.converteai.net" crossorigin>
 <link rel="preconnect" href="https://scripts.converteai.net" crossorigin>
-<link rel="preload" as="image" fetchpriority="high" href="cover.webp" type="image/webp">
+<!-- cover.webp removida — placeholder CSS puro renderiza INSTANTÂNEO (zero rede) -->
+
 <link rel="preload" href="https://cdn.converteai.net/a2d83dff-330c-4ace-96ad-19f8f4d8c466/6a0bbe4ef609f28007229e39/main.m3u8" as="fetch" crossorigin>
 <link rel="preload" href="https://scripts.converteai.net/a2d83dff-330c-4ace-96ad-19f8f4d8c466/players/6a0bbe59044ded98927d4ca6/v4/player.js" as="script">
 <link rel="preload" href="https://scripts.converteai.net/lib/js/smartplayer-wc/v4/smartplayer.js" as="script">
@@ -171,21 +172,40 @@ html,body{
   display:block;
   background:#000;
 }
-/* LCP IMAGE — base64-equiv via fetchpriority="high" preload.
-   Pinta INSTANTANEAMENTE quando o HTML termina. Vturb cobre por cima
-   ao montar (~300-500ms depois). Border-radius no IMG, não no slot,
-   pra zero risco de clipar botão. */
-.vsl-cover{
+/* LOADING PLACEHOLDER — CSS puro, ZERO rede. Renderiza junto com o HTML.
+   Vturb cobre por cima ao montar (~300-1000ms depois).
+   Estilo Netflix/YouTube: fundo preto + spinner girando + texto "Loading". */
+.vsl-placeholder{
   position:absolute;
   top:0;left:0;
   width:100%;
-  height:auto;
-  aspect-ratio: 16/9;
-  object-fit:cover;
-  display:block;
+  height:100%;
+  background:#000;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
   z-index:1;
   pointer-events:none;
   border-radius:4px;
+}
+.vsl-spinner{
+  width:48px;
+  height:48px;
+  border:4px solid rgba(255,255,255,0.12);
+  border-top-color:rgba(255,255,255,0.85);
+  border-radius:50%;
+  animation:vsl-spin 0.9s linear infinite;
+  /* GPU-accelerated, zero CLS/repaint cost */
+  will-change:transform;
+}
+@keyframes vsl-spin{ to { transform:rotate(360deg); } }
+.vsl-loading-text{
+  margin-top:14px;
+  color:rgba(255,255,255,0.7);
+  font-size:13px;
+  letter-spacing:0.4px;
+  font-weight:500;
 }
 .vsl-slot vturb-smartplayer{
   position:relative;
@@ -246,13 +266,12 @@ html,body{
 
   <div class="vsl-wrapper">
     <div class="vsl-slot">
-      <!-- LCP IMAGE: WebP local (same domain HTTP/2 reuse, 17 KB vs 35 KB) -->
-      <img class="vsl-cover"
-           src="cover.webp"
-           alt="Video preview"
-           width="760" height="428"
-           fetchpriority="high"
-           decoding="async">
+      <!-- LOADING PLACEHOLDER: CSS puro, ZERO rede, renderiza junto com HTML.
+           Vturb cobre por cima ao montar (~500-1000ms). LCP candidato = headline. -->
+      <div class="vsl-placeholder" aria-hidden="true">
+        <div class="vsl-spinner"></div>
+        <div class="vsl-loading-text">Loading video...</div>
+      </div>
       <vturb-smartplayer id="vid-6a0bbe59044ded98927d4ca6"></vturb-smartplayer>
       <script type="text/javascript">var s=document.createElement("script");s.src="https://scripts.converteai.net/a2d83dff-330c-4ace-96ad-19f8f4d8c466/players/6a0bbe59044ded98927d4ca6/v4/player.js",s.async=!0,document.head.appendChild(s);</script>
     </div>
